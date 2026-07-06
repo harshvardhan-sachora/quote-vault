@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quote Vault</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --wood: #6b4a34;
+    --wood-dark: #52371f;
+    --card: #f2e8d5;
+    --card-edge: #d8c7a1;
+    --ink: #2e2416;
+    --ink-soft: #7a6b52;
+    --stamp-red: #a13328;
+    --brass: #b3873f;
+    --brass-hi: #c99e50;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    color: var(--ink);
+    background:
+      repeating-linear-gradient(90deg, rgba(0,0,0,0.05) 0 2px, transparent 2px 90px),
+      linear-gradient(160deg, var(--wood), var(--wood-dark));
+    padding: 40px 16px 70px;
+  }
+
+  .wrap { max-width: 720px; margin: 0 auto; }
+
+  header { text-align: center; margin-bottom: 30px; }
+
+  .drawer-label {
+    display: inline-block;
+    background: var(--brass);
+    color: #2b1d0e;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 3px;
+    margin-bottom: 10px;
+  }
+
+  header h1 {
+    font-family: 'Special Elite', cursive;
+    font-size: 34px;
+    color: #f2e8d5;
+    margin: 0 0 6px;
+    text-shadow: 0 2px 3px rgba(0,0,0,0.4);
+    letter-spacing: 0.02em;
+  }
+
+  header p {
+    font-size: 12px;
+    color: rgba(242,232,213,0.7);
+    margin: 0;
+    letter-spacing: 0.03em;
+  }
+
+  /* ---------- MAIN QUOTE CARD ---------- */
+  .quote-card {
+    background: var(--card);
+    border: 1px solid var(--card-edge);
+    border-radius: 3px;
+    padding: 30px 26px 22px;
+    box-shadow: 0 16px 34px -14px rgba(0,0,0,0.55);
+    position: relative;
+    margin-bottom: 34px;
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .quote-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 32px;
+    width: 2px; height: 100%;
+    background: rgba(161,51,40,0.18);
+  }
+
+  .card-index {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-soft);
+    letter-spacing: 0.08em;
+    margin-bottom: 14px;
+    padding-left: 20px;
+  }
+
+  .quote-text {
+    font-family: 'Special Elite', cursive;
+    font-size: 21px;
+    line-height: 1.55;
+    padding-left: 20px;
+    flex: 1;
+    min-height: 84px;
+  }
+
+  .quote-text.loading { color: var(--ink-soft); font-size: 15px; }
+
+  .quote-author {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--ink-soft);
+    text-align: right;
+    margin-top: 14px;
+  }
+  .quote-author::before { content: "— "; }
+
+  .card-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 18px;
+    padding-left: 20px;
+  }
+
+  .btn {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    border: none;
+    padding: 9px 18px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: transform 0.1s ease, filter 0.15s ease;
+  }
+  .btn:active { transform: scale(0.96); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-new {
+    background: transparent;
+    border: 1.5px solid var(--ink-soft);
+    color: var(--ink);
+  }
+  .btn-new:hover { border-color: var(--ink); }
+
+  .btn-save {
+    background: var(--stamp-red);
+    color: #fbeceb;
+  }
+  .btn-save:hover { filter: brightness(1.08); }
+  .btn-save.saved { background: #6b8f52; }
+
+  /* ---------- VAULT SECTION ---------- */
+  .vault-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .vault-title {
+    font-family: 'Special Elite', cursive;
+    font-size: 18px;
+    color: #f2e8d5;
+  }
+
+  .vault-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: rgba(242,232,213,0.6);
+  }
+
+  .vault-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+  }
+
+  .vault-card {
+    background: var(--card);
+    border: 1px solid var(--card-edge);
+    border-radius: 3px;
+    padding: 14px 14px 12px;
+    box-shadow: 0 8px 16px -8px rgba(0,0,0,0.4);
+    position: relative;
+    animation: slide-in 0.25s ease;
+  }
+  @keyframes slide-in {
+    from { opacity: 0; transform: translateY(-8px); }
+  }
+  .vault-card.removing {
+    animation: slide-out 0.22s ease forwards;
+  }
+  @keyframes slide-out {
+    to { opacity: 0; transform: translateX(20px); }
+  }
+
+  .vault-text {
+    font-family: 'Special Elite', cursive;
+    font-size: 13.5px;
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+
+  .vault-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .vault-author {
+    font-size: 11px;
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+
+  .remove-btn {
+    background: none;
+    border: none;
+    color: var(--ink-soft);
+    font-size: 10px;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+  }
+  .remove-btn:hover { color: var(--stamp-red); }
+
+  .vault-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: rgba(242,232,213,0.65);
+    font-family: 'Special Elite', cursive;
+    font-size: 15px;
+    padding: 26px 10px;
+  }
+
+  .vault-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: rgba(242,232,213,0.6);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 20px 0;
+  }
+
+  .footer-note {
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: rgba(242,232,213,0.5);
+    margin-top: 30px;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="drawer-label">Drawer No. 7 — Quotations</div>
+    <h1>Quote Vault</h1>
+    <p>pull a quote, keep the ones worth keeping</p>
+  </header>
+
+  <div class="quote-card">
+    <div class="card-index" id="cardIndex">card —</div>
+    <div class="quote-text loading" id="quoteText">Pulling a card from the drawer…</div>
+    <div class="quote-author" id="quoteAuthor" style="display:none;"></div>
+    <div class="card-actions">
+      <button class="btn btn-new" id="newBtn">New quote</button>
+      <button class="btn btn-save" id="saveBtn" disabled>Save to vault</button>
+    </div>
+  </div>
+
+  <div class="vault-header">
+    <div class="vault-title">The Vault</div>
+    <div class="vault-count" id="vaultCount">— saved</div>
+  </div>
+
+  <div class="vault-grid" id="vaultGrid">
+    <div class="vault-state">Opening the drawer…</div>
+  </div>
+
+  <div class="footer-note">quotes via zenquotes.io — saved cards stored for every visitor</div>
+</div>
+
+<script>
+(function () {
+  const quoteText = document.getElementById('quoteText');
+  const quoteAuthor = document.getElementById('quoteAuthor');
+  const cardIndex = document.getElementById('cardIndex');
+  const newBtn = document.getElementById('newBtn');
+  const saveBtn = document.getElementById('saveBtn');
+  const vaultGrid = document.getElementById('vaultGrid');
+  const vaultCount = document.getElementById('vaultCount');
+
+  let currentQuote = null;
+  let cardNumber = 0;
+
+  async function fetchQuote() {
+    quoteText.className = 'quote-text loading';
+    quoteText.textContent = 'Pulling a card from the drawer…';
+    quoteAuthor.style.display = 'none';
+    saveBtn.disabled = true;
+    saveBtn.classList.remove('saved');
+    saveBtn.textContent = 'Save to vault';
+    newBtn.disabled = true;
+
+    try {
+      const res = await fetch('/api/quote');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not pull a quote.');
+
+      currentQuote = { text: data.text, author: data.author };
+      cardNumber += 1;
+      cardIndex.textContent = 'card ' + String(cardNumber).padStart(3, '0');
+      quoteText.className = 'quote-text';
+      quoteText.textContent = data.text;
+      quoteAuthor.textContent = data.author;
+      quoteAuthor.style.display = 'block';
+      saveBtn.disabled = false;
+    } catch (err) {
+      quoteText.className = 'quote-text loading';
+      quoteText.textContent = err.message || 'The drawer is stuck. Try again in a moment.';
+    } finally {
+      newBtn.disabled = false;
+    }
+  }
+
+  async function saveQuote() {
+    if (!currentQuote) return;
+    saveBtn.disabled = true;
+    try {
+      const res = await fetch('/api/vault', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(currentQuote)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not save this card.');
+      saveBtn.classList.add('saved');
+      saveBtn.textContent = 'Saved ✓';
+      loadVault();
+    } catch (err) {
+      saveBtn.disabled = false;
+      alert(err.message);
+    }
+  }
+
+  async function loadVault() {
+    try {
+      const res = await fetch('/api/vault');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not open the vault.');
+      renderVault(data.quotes || []);
+    } catch (err) {
+      vaultGrid.innerHTML = `<div class="vault-state">${err.message}</div>`;
+    }
+  }
+
+  function renderVault(quotes) {
+    vaultCount.textContent = quotes.length + (quotes.length === 1 ? ' saved' : ' saved');
+    if (quotes.length === 0) {
+      vaultGrid.innerHTML = '<div class="vault-empty">The vault is empty. Save a quote to start the collection.</div>';
+      return;
+    }
+    vaultGrid.innerHTML = '';
+    quotes.forEach(q => {
+      const el = document.createElement('div');
+      el.className = 'vault-card';
+      el.dataset.id = q.id;
+      el.innerHTML = `
+        <div class="vault-text">"${escapeHtml(q.text)}"</div>
+        <div class="vault-footer">
+          <span class="vault-author">${escapeHtml(q.author)}</span>
+          <button class="remove-btn" data-id="${q.id}">remove</button>
+        </div>
+      `;
+      el.querySelector('.remove-btn').addEventListener('click', () => removeQuote(q.id, el));
+      vaultGrid.appendChild(el);
+    });
+  }
+
+  async function removeQuote(id, el) {
+    el.classList.add('removing');
+    try {
+      await fetch('/api/vault', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      setTimeout(loadVault, 200);
+    } catch (err) {
+      el.classList.remove('removing');
+      alert('Could not remove this card. Try again.');
+    }
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  newBtn.addEventListener('click', fetchQuote);
+  saveBtn.addEventListener('click', saveQuote);
+
+  fetchQuote();
+  loadVault();
+})();
+</script>
+
+</body>
+</html>
